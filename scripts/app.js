@@ -214,7 +214,31 @@
     var statement = 'select * from weather.forecast where woeid=' + key;
     var url = 'https://query.yahooapis.com/v1/public/yql?format=json&q=' +
         statement;
-    // TODO add cache logic here
+    //cache logic here
+    /* Basic flow:
+     * 1.Check if the cache exists in Window
+     * 2.Request the data from server via API
+     * 3.If step 2 fails, get data from cache
+     * 4.Request data from server
+     * 5.Save the data into cache for later use.
+     * 6.Basic principle: Always prefer the data from the server, which is newer
+     */
+    if('caches' in window) {
+      /* Check if the service worker has already cached weather data
+       * if so, display the cached data while app fetches the latest data
+       */
+      caches.match(url).then(function(response) {
+        if (response) {
+          response.json().then(function updateFromCache(json) {
+            var results = json.query.results;
+            results.key = key;
+            results.label = label;
+            results.created = json.query.created;
+            app.updateForecastCard(results);
+          });
+        }
+      });
+    }
 
     // Fetch the latest data.
     var request = new XMLHttpRequest();
